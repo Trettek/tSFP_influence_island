@@ -1,1 +1,2 @@
-
+"Influence Island" is a mini-game within The Sims Freeplay that rewards winning players with a set of exclusive in-game items.
+Here, I model this mini-game as a sequential stochastic control problem, with the primary goal of finding the optimal set of user actions to win the full set of exclusive in-game items without spending in game currency. As a secondary goal, I create several models that account for variability in whether in-game currency is spent, whether certain non-optimal actions were taken, whether your goal is to win the full set of exclusive in-game items, or simply some of them, etc. 
