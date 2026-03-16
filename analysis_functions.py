@@ -50,6 +50,7 @@ def solve_round(round_rules, actions, action_probs, p_convince):
     return V
 
 def compute_policy(round_rules, actions, action_probs, p_convince):
+    
     V = solve_round(round_rules, actions, action_probs, p_convince)
     n_trials = len(round_rules)
 
@@ -57,21 +58,25 @@ def compute_policy(round_rules, actions, action_probs, p_convince):
 
     for t in range(n_trials):
         for score in range(0, 101):
-            best_action = None
-            best_val = -1
+            for vs_left in range(4): 
+                best_action = None
+                best_val = -1
 
-            for action in actions:
-                val = V(t, score, 3)
+                for action in actions:
+                    if action == "very_small" and vs_left == 0:
+                        continue  
+                    val = V(t, score, vs_left)
 
-                if val > best_val:
-                    best_val = val
-                    best_action = action
+                    if val > best_val:
+                        best_val = val
+                        best_action = action
 
-            policy.append({
-                "trial": t + 1,
-                "score": score,
-                "best_action": best_action,
-                "win_probability": best_val
-            })
+                policy.append({
+                    "trial": t + 1,
+                    "score": score,
+                    "vs_left": vs_left,
+                    "best_action": best_action,
+                    "win_probability": best_val
+                })
 
     return pd.DataFrame(policy)
