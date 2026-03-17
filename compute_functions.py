@@ -1,6 +1,8 @@
 from functools import lru_cache
 import pandas as pd
 
+from preprocess_functions import load_game_config
+
 def solve_round(round_rules, actions, action_probs, p_convince):
 
     """ 
@@ -135,3 +137,31 @@ def compute_policy(round_rules, actions, action_probs, p_convince):
     optimal_Q_table = full_Q_table.groupby(["trial", "score", "vs_left"]).apply(lambda x: x.loc[x["win_probability"].idxmax()])
 
     return full_Q_table, optimal_Q_table
+
+
+def build_decision_tbl(folder_path):
+
+    actions, action_probs, round_map, vs_limit, p_convince = load_game_config(folder_path)
+
+    all_full = []
+    all_optimal = []
+
+    for r, rules in round_map.items():
+
+        full_Q, optimal_Q = compute_policy(
+            rules,
+            actions,
+            action_probs,
+            p_convince
+        )
+
+        full_Q["round"] = r
+        optimal_Q["round"] = r
+
+        all_full.append(full_Q)
+        all_optimal.append(optimal_Q)
+
+    full_Q_all = pd.concat(all_full, ignore_index=True)
+    optimal_Q_all = pd.concat(all_optimal, ignore_index=True)
+
+    return full_Q_all, optimal_Q_all
