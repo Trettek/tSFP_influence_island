@@ -12,6 +12,13 @@ from matplotlib.lines import Line2D
 BASE_PATH = "data"
 st.title("Influencer Island Decision Helper")
 
+# action display mapping
+action_label_map = {
+    "very_small": "chocolate [2-9]",
+    "small": "small [1-20]",
+    "large": "large [20-45]"
+}
+
 # select precomputed data 
 
 dataset_options = [
@@ -22,7 +29,7 @@ dataset_options = [
 dataset = st.selectbox("Dataset", dataset_options)
 dataset_path = os.path.join(BASE_PATH, dataset)
 
-# load tables from precomputed data # TODO: make pathing flexible
+# load tables
 
 optimal_Q = pd.read_csv(
     os.path.join(dataset_path, "tables", "optimal_Q_table.csv")
@@ -50,7 +57,8 @@ vs_left = st.selectbox(
     index=vs_vals.index(default_vs)
 )
 
-# score inputs
+# score input
+
 score_input = st.number_input("Score", step=1)
 
 valid_scores = optimal_Q[
@@ -69,7 +77,7 @@ if score_input not in valid_scores:
 
 score = int(score_input)
 
-# lookup info
+# lookup
 
 mask = (
     (optimal_Q["round"] == round_num) &
@@ -98,20 +106,26 @@ best_prob = opt_row["win_probability"]
 
 df["regret"] = best_prob - df["win_probability"]
 
+# add display labels
+df["action_display"] = df["action"].map(action_label_map)
+
 # output
 
 st.subheader("Recommendation")
 
-st.success(f"Best action: {best_action}")
+st.success(f"Best action: {action_label_map.get(best_action, best_action)}")
 st.write(f"Win probability: {best_prob:.4f}")
 
 st.subheader("Action Comparison")
 
-st.bar_chart(df.set_index("action")["win_probability"])
-st.dataframe(df)
+st.bar_chart(df.set_index("action_display")["win_probability"])
 
-# dynamic plot...literally the same but with 5 lines added
-# need to make this less dumb 
+# display table with labels
+df_display = df.copy()
+df_display["action"] = df_display["action_display"]
+st.dataframe(df_display.drop(columns=["action_display"]))
+
+# heatmap
 
 def plot_policy_heatmap_specific_state(optimal_Q, highlight_state=None):
 
@@ -124,6 +138,8 @@ def plot_policy_heatmap_specific_state(optimal_Q, highlight_state=None):
         df = optimal_Q[optimal_Q["round"] == r].copy()
 
         actions = sorted(optimal_Q["action"].unique())
+        action_labels = [action_label_map.get(a, a) for a in actions]
+
         action_map = {a: i for i, a in enumerate(actions)}
         df["action_id"] = df["action"].map(action_map)
 
@@ -149,19 +165,17 @@ def plot_policy_heatmap_specific_state(optimal_Q, highlight_state=None):
         )
 
         colorblind_palette = [
-            "#0072B2",  # blue
-            "#E69F00",  # orange
-            "#009E73",  # green
-            "#D55E00",  # vermillion
-            "#CC79A7",  # purple
-            "#F0E442",  # yellow
-            "#56B4E9",  # light blue
-            "#000000"   # black
+            "#0072B2",
+            "#E69F00",
+            "#009E73",
+            "#D55E00",
+            "#CC79A7",
+            "#F0E442",
+            "#56B4E9",
+            "#000000"
         ]
 
-
         cmap = ListedColormap(colorblind_palette[:len(actions)])
-
         norm = BoundaryNorm(np.arange(len(actions)+1)-0.5, cmap.N)
 
         mesh = ax.pcolormesh(
@@ -175,7 +189,6 @@ def plot_policy_heatmap_specific_state(optimal_Q, highlight_state=None):
             linewidth=0.3
         )
 
-        # ax
         ax.set_title(f"Optimal Decision (Round {r})", pad=40)
         ax.set_ylabel("Score")
         ax.set_xlabel("Chocolate Left (nested within trial)")
@@ -189,7 +202,6 @@ def plot_policy_heatmap_specific_state(optimal_Q, highlight_state=None):
         ax.set_yticks(y_centers[::10])
         ax.set_yticklabels(scores[::10])
 
-        # t groups
         n_vs = len(vs_vals)
 
         for i, t in enumerate(trials):
@@ -202,7 +214,6 @@ def plot_policy_heatmap_specific_state(optimal_Q, highlight_state=None):
 
         ax.axvline(Z.shape[1], color="black", linewidth=1.5)
 
-        # range
         for i, t in enumerate(trials):
 
             rule_row = df[df["trial"] == t].iloc[0]
@@ -227,7 +238,6 @@ def plot_policy_heatmap_specific_state(optimal_Q, highlight_state=None):
                 ax.plot([start, end], [conv_high, conv_high],
                         linestyle=":", color="black", linewidth=2)
 
-        # highlight new block
         if highlight_state is not None:
             r_h, t_h, s_h, vs_h = highlight_state
 
@@ -239,24 +249,19 @@ def plot_policy_heatmap_specific_state(optimal_Q, highlight_state=None):
                     )
                     row_idx = scores.index(s_h)
 
-                    # outer border
                     ax.add_patch(plt.Rectangle((col_idx, row_idx), 1, 1,
                                             fill=False, edgecolor="black", linewidth=4))
-
-                    # inner border
                     ax.add_patch(plt.Rectangle((col_idx, row_idx), 1, 1,
                                             fill=False, edgecolor="white", linewidth=2))
 
                 except ValueError:
                     pass
 
-        # cb
         cbar = plt.colorbar(mesh, ax=ax, pad=0.02)
         cbar.set_ticks(range(len(actions)))
-        cbar.set_ticklabels(actions)
+        cbar.set_ticklabels(action_labels)
         cbar.set_label("Action")
 
-        # legend
         legend_elements = [
             Line2D([0], [0], color='black', linestyle='--', label='Win Range'),
             Line2D([0], [0], color='black', linestyle=':', label='Convince Range')
@@ -275,7 +280,6 @@ def plot_policy_heatmap_specific_state(optimal_Q, highlight_state=None):
 
     return figs
 
-# display range
 
 figs = plot_policy_heatmap_specific_state(
     optimal_Q,
@@ -284,5 +288,3 @@ figs = plot_policy_heatmap_specific_state(
 
 st.subheader("Decision Map")
 st.pyplot(figs[round_num])
-
-# TODO: add data collection for gameplay logs
