@@ -53,6 +53,17 @@ def solve_round(round_rules, actions, action_probs, p_convince):
 
     def Q(t, score, vs_left, action):
 
+        """
+        description: returns the expected win probability for a given state (trial, score, vs_left) and action
+        inputs:
+        - t (int): current trial
+        - score (int): current score
+        - vs_left (int): "very small" actions left
+        - action (str): action to evaluate
+        outputs:
+        - expected (float): expected win probability for the given state and action
+        """
+
         rule = round_rules[t]
         win_low, win_high = rule["win"]
         conv_range = rule["conv"]
@@ -89,18 +100,20 @@ def solve_round(round_rules, actions, action_probs, p_convince):
     return V, Q
 
 def compute_policy(round_rules, actions, action_probs, p_convince):
+    """
+    description: computes optimal user decision for a trial 
+    inputs: see solve_round function
+    outputs: df of every state and every action with win probabilities 
+    """
 
     V, Q = solve_round(round_rules, actions, action_probs, p_convince)
     n_trials = len(round_rules)
 
-    policy = []
+    rows = []
 
     for t in range(n_trials):
         for score in range(0, 101):
             for vs_left in range(4):
-
-                best_action = None
-                best_val = -1
 
                 for action in actions:
 
@@ -109,16 +122,16 @@ def compute_policy(round_rules, actions, action_probs, p_convince):
 
                     val = Q(t, score, vs_left, action)
 
-                    if val > best_val:
-                        best_val = val
-                        best_action = action
+                    rows.append({
+                        "trial": t + 1,
+                        "score": score,
+                        "vs_left": vs_left,
+                        "action": action,
+                        "win_probability": val
+                    })
+    
+    full_Q_table = pd.DataFrame(rows)
 
-                policy.append({
-                    "trial": t + 1,
-                    "score": score,
-                    "vs_left": vs_left,
-                    "best_action": best_action,
-                    "win_probability": best_val
-                })
+    optimal_Q_table = full_Q_table.groupby(["trial", "score", "vs_left"]).apply(lambda x: x.loc[x["win_probability"].idxmax()])
 
-    return pd.DataFrame(policy)
+    return full_Q_table, optimal_Q_table

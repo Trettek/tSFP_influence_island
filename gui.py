@@ -3,6 +3,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+# run streamlit with `streamlit run gui.py` in terminal to launch 
+
 from compute_functions import solve_round
 
 
