@@ -219,23 +219,18 @@ def plot_policy_heatmap_specific_state(optimal_Q, highlight_state=None):
             rule_row = df[df["trial"] == t].iloc[0]
 
             win_low = rule_row["win_low"]
-            win_high = rule_row["win_high"]
             conv_low = rule_row["conv_low"]
-            conv_high = rule_row["conv_high"]
 
             start = i * n_vs
             end = start + n_vs
 
+            # ONLY plot lower bounds
             if pd.notna(win_low):
                 ax.plot([start, end], [win_low, win_low],
-                        linestyle="--", color="black", linewidth=1.5)
-                ax.plot([start, end], [win_high, win_high],
                         linestyle="--", color="black", linewidth=1.5)
 
             if pd.notna(conv_low):
                 ax.plot([start, end], [conv_low, conv_low],
-                        linestyle=":", color="black", linewidth=2)
-                ax.plot([start, end], [conv_high, conv_high],
                         linestyle=":", color="black", linewidth=2)
 
         if highlight_state is not None:
@@ -263,8 +258,8 @@ def plot_policy_heatmap_specific_state(optimal_Q, highlight_state=None):
         cbar.set_label("Action")
 
         legend_elements = [
-            Line2D([0], [0], color='black', linestyle='--', label='Win Range'),
-            Line2D([0], [0], color='black', linestyle=':', label='Convince Range')
+            Line2D([0], [0], color='black', linestyle='--', label='Win Threshold'),
+            Line2D([0], [0], color='black', linestyle=':', label='Convince Threshold')
         ]
 
         ax.legend(
