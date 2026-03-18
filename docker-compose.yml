@@ -1,0 +1,7 @@
+services:
+  python-app:
+    build: .
+    ports:
+      - "8083:8501"
+    environment:
+      - UV_NO_DEV=1
